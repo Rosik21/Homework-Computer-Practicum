@@ -9,7 +9,8 @@ int main() {
 	size_t floorNumber = 9;
 
 	printf("\n You are now on %s floor", currentFloor);
-	printf("\n If you want to exit type \"exit\"");
+	printf("\n If you want to exit type \"exit\" \n");
+	printAvaibleFloors();
 
 	while (1) {
 		printf("\n Please enter the floor you want to go to: ");
@@ -38,4 +39,17 @@ int validFloor(char inputString[], char floorList[][5], size_t floorNumber) //si
 	}
 	return 0;
 }
+int printAvaibleFloors() {
+	printf("\n Avaible floors are: ");
+	printf("\n Basement 1   -> B1");
+	printf("\n Basement 2   -> B2");
+	printf("\n Basement 3   -> B3");
+	printf("\n Ground floor -> G");
+	printf("\n First floor  -> 1");
+	printf("\n Second floor -> 2");
+	printf("\n Third floor  -> 3");
+	printf("\n Fourth floor -> 4");
+	printf("\n Fifth floor  -> 5\n");
+	return 0;
+}                               
 
