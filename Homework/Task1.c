@@ -2,99 +2,153 @@
 #include <stdlib.h>
 #include <string.h>
 #include <locale.h>
+#include "windows.h"
 
+/*
+Everything i have used in my homework was taken from famnit website(from week 9 till today's class) and from this websites
+https://learn.microsoft.com/en-us/cpp/c-language/?view=msvc-170
+https://www.tutorialspoint.com/c_standard_library/index.htm
+*/
 
 int main() {
+	char* floorList[] = { "B3", "B2", "B1", "G", "1", "2", "3", "4", "5" };
+	unsigned short floorsNumber = sizeof(floorList) / sizeof(floorList[0]); 
+	unsigned short currentFloorIndex = 3;
+	short tempFloorIndex;
 
-	char inputFloor[5] = "G";
-	char floorList[9][5] = { "B3", "B2", "B1", "G", "1", "2", "3", "4", "5" };
-	int currentFloorIndex = 3;
-	size_t floorNumber = 9;
-	int tempFloorIndex;
-	char **floorQueue; //** means that this double array haven't been created yet
+	const char scanPattern[] = "%4s";
+	const char exitCommand[] = "exit";
+	const char moveUpCommand[] = "up";
+	const char moveDownCommand[] = "down";
 
-	printf("\n You are now on %s floor", inputFloor);
-	printf("\n If you want to exit type \"exit\" \n");
-	printAvaibleFloors();
+	char* currentFloor = floorList[currentFloorIndex];
+	char* inputFloor = malloc(sizeof(exitCommand));
 
-	int passengersNumber = inputPassengersNumber();
-	floorQueue = (char*)malloc(passengersNumber * sizeof(char*)); //https://learn.microsoft.com/en-us/cpp/c-language/sizeof-operator-c?view=msvc-170 | malloc = allocate memory for something | allocate memory for char array
-	for (int i = 0; i < passengersNumber; i++) {
-		floorQueue[i] = (char)malloc(5 * sizeof(char));
-	}
+	unsigned short randomPassengersNumber;
 
-	if (passengersNumber == 1) {
-		while (1) {
+	printStartedInfo(&currentFloor);
+	srand(time(NULL)); //generation numbers using current time
 
-			printf("\n Please enter the floor you want to go to: ");
+	while (1) {
+		printf("\n Please enter the floor you want to go to: ");
+		scanf(&scanPattern, inputFloor);
 
-			scanf("%4s", inputFloor);
+		if (strcmp(inputFloor, exitCommand) == 0) { //strings compare
+			printf("\n Thank you for using an elevator \n");
+			return 0;
+		}
 
-			if (strcmp(inputFloor, "exit") == 0) {
-				printf("\n Thank you for using an elevator \n");
-				return 0;
-			}
+		tempFloorIndex = validFloor(&inputFloor, &floorList, &floorsNumber);
 
-			tempFloorIndex = validFloor(inputFloor, floorList, floorNumber);
-			if (tempFloorIndex >= 0) {
+		if (tempFloorIndex >= 0) {
+			if (tempFloorIndex != currentFloorIndex) {
+				int* floorQueue = (int*)malloc(floorsNumber * sizeof(int));
+				randomPassengersNumber = getRandomNumber(0, 6);
+
+				if (randomPassengersNumber > 0) {
+					moveToFloorQueue(&currentFloorIndex, &tempFloorIndex, &randomPassengersNumber,
+						&floorQueue, &floorList, &floorsNumber);
+				}
+
 				currentFloorIndex = tempFloorIndex;
-				printCurrentFloor(inputFloor);
+				printCurrentFloor(&floorList[currentFloorIndex]);
 			}
-
 			else
-				if (strcmp(inputFloor, "up") == 0) {
-					if (currentFloorIndex < (floorNumber - 1)) {
-						currentFloorIndex += 1;
-						memcpy(inputFloor, floorList[currentFloorIndex], 5); // memcpy(copyTo, copyFrom, strSize) https://www.tutorialspoint.com/c_standard_library/c_function_memcpy.htm 
-						printCurrentFloor(inputFloor);
-					}
-					else printf("\n You can't go higher than fifth floor");
-
-				}
+				printf(" You are already on this floor\n");
+		}
+		else
+			if (strcmp(inputFloor, moveUpCommand) == 0)
+				moveUp(&inputFloor, &currentFloorIndex, &floorList, &floorsNumber);
+			else
+				if (strcmp(inputFloor, moveDownCommand) == 0)
+					moveDown(&inputFloor, &currentFloorIndex, &floorList);
 				else
-					if (strcmp(inputFloor, "down") == 0) {
-						if (currentFloorIndex - 1 >= 0) {
-							currentFloorIndex -= 1;
-							memcpy(inputFloor, floorList[currentFloorIndex], 5);
-							printCurrentFloor(inputFloor);
-						}
-						else
-							printf("\n You can't go lower than Basement 3");
-					}
-					else
-						printf("\n There are no such floor as \"%s\"", inputFloor);
-		}
-	}
-	else {
-
-		for (int i = 0; i < passengersNumber; i++) {
-			
-			while (1) {
-				printf("\n Enter the floor the [%d] passenger wants to go to: ", i + 1);
-				scanf("%4s", inputFloor);
-				tempFloorIndex = validFloor(inputFloor, floorList, floorNumber);
-				if (tempFloorIndex >= 0) {
-					floorQueue[i] = floorList[tempFloorIndex];
-					break;
-				}
-				else {
 					printf("\n There are no such floor as \"%s\"", inputFloor);
-				}
-				rewind(stdin);
-			} 
+
+		clearInputBuffer();
+	}
+
+}
+
+int getRandomNumber(unsigned int minNumber, unsigned int maxNumber) {
+	return rand() % (maxNumber - minNumber + 1) + minNumber;
+}
+
+int validFloor(char* inputFloor[], char* floorList[], unsigned short* floorsNumber) 
+{
+	for (int i = 0; i < *floorsNumber; i++)
+		if (strcmp(*inputFloor, floorList[i]) == 0)
+			return i;
+
+	return -1;
+}
+
+int moveUp(char* inputFloor[], unsigned short* currentFloorIndex, char* floorList[], unsigned short* floorsNumber) {
+	if (*currentFloorIndex < *floorsNumber - 1) {
+		*currentFloorIndex += 1;
+		strcpy(*inputFloor, floorList[*currentFloorIndex]);// copy from second string to first
+		printCurrentFloor(inputFloor);
+	}
+	else
+		printf("\n You can't go higher than fifth floor");
+}
+int moveDown(char* inputFloor[], unsigned short* currentFloorIndex, char* floorList[]) { //short was used for optimisation
+	if (*currentFloorIndex > 0) {
+		*currentFloorIndex -= 1;
+		memcpy(*inputFloor, floorList[*currentFloorIndex], 5);
+		printCurrentFloor(inputFloor);
+	}
+	else
+		printf("\n You can't go lower than Basement 3");
+}
+
+int moveToFloorQueue(unsigned short* currentFloorIndex, short* tempFloorIndex,
+	unsigned short* randomPassengersNumber, int* floorQueue, char* floorList[],
+	unsigned short* floorsNumber)
+{
+	for (int i = 0; i < *floorsNumber; i++)
+		floorQueue[i] = 0;
+
+	unsigned char randomIndexNumber;
+
+	for (int i = 0; i < *randomPassengersNumber; i++) {
+		if (*currentFloorIndex > *tempFloorIndex)
+			randomIndexNumber = getRandomNumber(*tempFloorIndex, *currentFloorIndex - 1);
+		else
+			randomIndexNumber = getRandomNumber(*currentFloorIndex + 1, *tempFloorIndex);
+
+		floorQueue[randomIndexNumber] += 1;
+	}
+
+	int i;
+
+	if (*currentFloorIndex > *tempFloorIndex)
+		i = *floorsNumber - 1;
+	else
+		i = 0;
+
+	printf("\n");
+	for (; i >= 0 && i < *floorsNumber && *currentFloorIndex != *tempFloorIndex;) {
+		if (floorQueue[i] > 0) {
+			*currentFloorIndex = i;
+			printf(" %d passengers left the elevator on the %s floor\n", floorQueue[i], floorList[i]);
+			Sleep(750); //little pause in console for better looking
 		}
-		moveToFloorQueue(passengersNumber, floorQueue);
+
+		if (*currentFloorIndex > *tempFloorIndex)
+			i--;
+		else
+			i++;
 	}
 }
 
-int validFloor(char inputString[], char floorList[][5], size_t floorNumber) //https://www.tutorialspoint.com/size-t-data-type-in-c#:~:text=The%20datatype%20size_t%20is%20unsigned,It%20can%20never%20be%20negative
-{
-	for (int i = 0; i < floorNumber; i++) {
-		if (strcmp(inputString, floorList[i]) == 0) {
-			return i;
-		}
-	}
-	return -1;
+int printCurrentFloor(char* currentFloor[]) {
+	printf("\n You are now on %s floor", *currentFloor);
+}
+int printStartedInfo(char* currentFloor[]) {
+	printf("\n You are now on %s floor", *currentFloor);
+	printf("\n If you want to exit type \"exit\" \n");
+	printAvaibleFloors();
 }
 int printAvaibleFloors() {
 	printf("\n Avaible floors are: ");
@@ -110,41 +164,8 @@ int printAvaibleFloors() {
 	printf("\n To go up   -> [up]");
 	printf("\n To go down -> [down]\n");
 	return 0;
-}  
-int printCurrentFloor(char currentFloor[]) {
-	printf("\n You are now on %s floor", currentFloor);
-	return 0;
-
-}
-int inputPassengersNumber() {
-	int passengersNumber = 0;
-
-	while (1) {
-		printf("\n Enter passengers number: ");
-		scanf("%d", &passengersNumber);
-
-		if (passengersNumber > 31)
-			printf(" So many passengers won't fit in the elevator\n");
-		else
-			if (passengersNumber <= 0)
-				printf(" Incorrect number of passengers\n");
-			else
-				if (passengersNumber != 0)
-					break;
-				else
-					printf("\n Incorrect input\n");
-
-		passengersNumber = 0;
-		rewind(stdin); // Clear buffer https://learn.microsoft.com/en-us/cpp/c-runtime-library/reference/rewind?view=msvc-170
-	}
-
-	return passengersNumber;
-}
-int moveToFloorQueue(int passengerNumber, char *floorQueue[5]) {
-	for (int i = 0; i < passengerNumber; i++){
-		printf("\n For the [%d] passenger the elevator stopped on the %s floor ",i+1, floorQueue[i]);
-	}
 }
 
-
-
+int clearInputBuffer() {
+	rewind(stdin);
+}
